@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/init.php'; ?>
+<?php require_once '/var/www/includes/init.php'; ?>
 <?php
 session_start();
 if (!isset($_SESSION['user'])) {
@@ -6,7 +6,7 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-require_once '../includes/db.php';
+require_once '/var/www/includes/db.php';
 
 $ticketId = $_GET['id'];
 

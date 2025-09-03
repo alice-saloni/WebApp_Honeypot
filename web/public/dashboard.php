@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/init.php'; ?>
+<?php require_once '/var/www/includes/init.php'; ?>
 <?php
 session_start();
 if (!isset($_SESSION['user'])) {
@@ -22,7 +22,7 @@ $user = $_SESSION['user'];
     <h2>Your Tickets</h2>
     <ul>
         <?php
-        require_once '../includes/db.php';
+    require_once '/var/www/includes/db.php';
         $userId = $user['id'];
 
         // VULN: IDOR - No proper ownership check

@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/init.php'; ?>
+<?php require_once '/var/www/includes/init.php'; ?>
 <?php
 session_start();
 if (!isset($_SESSION['user'])) {
@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // VULN: No proper file validation, allows dangerous file types
     if (move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
-        require_once '../includes/db.php';
+    require_once '/var/www/includes/db.php';
         $query = "INSERT INTO uploads (ticket_id, user_id, filename, path, mime) VALUES ($ticketId, $userId, '$fileName', '$filePath', '{$_FILES['file']['type']}')";
 
         if ($db->query($query)) {

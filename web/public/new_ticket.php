@@ -1,11 +1,11 @@
-<?php require_once __DIR__ . '/../includes/init.php';
+<?php require_once '/var/www/includes/init.php';
 session_start();
 if (!isset($_SESSION['user'])) {
     header('Location: login.php');
     exit;
 }
 
-require_once '../includes/db.php';
+require_once '/var/www/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = $_POST['title'];

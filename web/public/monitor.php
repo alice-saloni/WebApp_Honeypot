@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/init.php'; ?>
+<?php require_once '/var/www/includes/init.php'; ?>
 <?php
 if ($_SERVER['PHP_AUTH_USER'] !== 'monitor' || $_SERVER['PHP_AUTH_PW'] !== 'monitor123') {
     header('WWW-Authenticate: Basic realm="Monitor Access"');
@@ -7,7 +7,7 @@ if ($_SERVER['PHP_AUTH_USER'] !== 'monitor' || $_SERVER['PHP_AUTH_PW'] !== 'moni
     exit;
 }
 
-require_once '../includes/db.php';
+require_once '/var/www/includes/db.php';
 
 $filter = '';
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

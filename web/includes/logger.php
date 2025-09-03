@@ -49,7 +49,7 @@ function hp_log_request(mysqli $mysqli, int $status = 200, string $notes = '') {
 
     // Insert into database
     $sql = "INSERT INTO requests (ip, method, path, query, body, headers, cookies, referer, user_agent, session_id, response_status, tags, notes) VALUES (" .
-        "'$ip', '$method', '$path', '$query', '$body', '$headers', '$cookies', '$referer', '$userAgent', '$sessionId', $status, '$tags', '$notes'");
+        "'$ip', '$method', '$path', '$query', '$body', '$headers', '$cookies', '$referer', '$userAgent', '$sessionId', $status, '$tags', '$notes')";
 
     if (!$mysqli->query($sql)) {
         // Log to file if DB insert fails
@@ -71,7 +71,6 @@ function hp_log_request(mysqli $mysqli, int $status = 200, string $notes = '') {
         file_put_contents(__DIR__ . '/../logs/app.log', $logLine, FILE_APPEND);
     }
 }
-
 // Helper to set response status
 function hp_set_response_status($code) {
     http_response_code($code);

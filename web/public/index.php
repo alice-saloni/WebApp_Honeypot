@@ -1,4 +1,4 @@
-<?php require_once __DIR__ . '/../includes/init.php'; ?>
+<?php require_once '/var/www/includes/init.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

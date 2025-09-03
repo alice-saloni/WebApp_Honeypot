@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../includes/init.php';
-require_once '../includes/db.php';
+require_once '/var/www/includes/init.php';
+require_once '/var/www/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];

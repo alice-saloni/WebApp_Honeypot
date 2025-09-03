@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../includes/init.php';
-require_once '../includes/db.php';
+require_once '/var/www/includes/init.php';
+require_once '/var/www/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
@@ -30,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <h1>Login</h1>
-    <?php if (isset($error)) echo "<p style='color: red;'>$error</p>"; ?>
+    <?php if (isset($error)) {
+        // VULN: Reflected XSS - username is echoed raw
+        echo "<p style='color: red;'>$error for username: " . ($_POST['username'] ?? '') . "</p>";
+    } ?>
     <form method="POST">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required><br>
