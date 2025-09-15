@@ -1,0 +1,2 @@
+INSERT INTO tickets (owner_id, title, description, status) VALUES 
+(2, 'Login Page Security Issue', 'I found a potential security vulnerability in the login page. When I try to log in with the following username: <script>alert("XSS")</script>, the error message displays it without sanitization.\n\nSteps to reproduce:\n1. Go to login page\n2. Enter malicious username\n3. Submit with wrong password\n4. Observe XSS in error message\n\nPlease fix this ASAP!', 'open');

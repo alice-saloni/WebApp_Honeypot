@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    background: #1a2a33;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    max-width: 900px;
+    margin: 20px auto;
+    animation: fadeIn 1s ease-in-out;
+    border: 1px solid #2c5364;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+h1, h2 {
+    color: #61dafb;
+    border-bottom: 2px solid #61dafb;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+a {
+    color: #61dafb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #2c5364;
+    border-radius: 5px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+    background-color: #0f2027;
+    color: #e0e0e0;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #61dafb;
+    outline: none;
+}
+
+button {
+    width: auto;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    background: #61dafb;
+    color: #1a2a33;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #4fa8c5;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #2c5364;
+}
+
+th {
+    background-color: #0f2027;
+    font-weight: 700;
+}
+
+tr:hover {
+    background-color: #203a43;
+}
+
+/* Ticket Details */
+.ticket-details p, .comments p, .attachments p {
+    line-height: 1.6;
+}
+
+.comments, .attachments {
+    margin-top: 30px;
+}
+
+/* Login Page Specific */
+.login-body {
+    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    animation: fadeIn 1s ease-in-out;
+    color: #e0e0e0;
+    border: 1px solid #2c5364;
+}
+
+.login-container h1 {
+    border-bottom: none;
+    font-size: 2.5em;
+}
+
+.login-container .form-group {
+    text-align: left;
+}
+
+.login-container label {
+    font-size: 1.1em;
+}
+
+.login-container input[type="text"],
+.login-container input[type="password"] {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid #2c5364;
+}
+
+.login-container input[type="text"]::placeholder,
+.login-container input[type="password"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.login-container button {
+    width: 100%;
+    background: #61dafb;
+    color: #1a2a33;
+}
+
+.login-container a {
+    color: #61dafb;
+    font-size: 1.1em;
+}

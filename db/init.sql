@@ -23,8 +23,15 @@ CREATE TABLE tickets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create comments table
+-- Create comments table for Stored XSS
 CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create ticket_comments table
+CREATE TABLE ticket_comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ticket_id INT NOT NULL,
     user_id INT NOT NULL,

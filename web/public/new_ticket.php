@@ -1,5 +1,5 @@
-<?php require_once '/var/www/includes/init.php';
-session_start();
+<?php
+require_once '/var/www/includes/init.php';
 if (!isset($_SESSION['user'])) {
     header('Location: login.php');
     exit;
@@ -16,6 +16,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = "INSERT INTO tickets (owner_id, title, description, status) VALUES ($ownerId, '$title', '$description', 'open')";
 
     if ($db->query($query)) {
+        $newTicketId = $db->insert_id;
+
+        // Handle file upload
+        if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] == 0) {
+            $uploadDir = 'uploads/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $fileName = basename($_FILES['attachment']['name']);
+            $filePath = $uploadDir . $fileName;
+
+            // VULN: No proper file validation, allows dangerous file types
+            if (move_uploaded_file($_FILES['attachment']['tmp_name'], $filePath)) {
+                $mime_type = $_FILES['attachment']['type'];
+                $upload_query = "INSERT INTO uploads (ticket_id, user_id, filename, path, mime) VALUES ($newTicketId, $ownerId, '$fileName', '$filePath', '$mime_type')";
+                $db->query($upload_query);
+            }
+        }
+
         header('Location: dashboard.php');
         exit;
     } else {
@@ -24,22 +43,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Ticket</title>
-</head>
-<body>
-    <h1>Create New Ticket</h1>
-    <?php if (isset($error)) echo "<p style='color: red;'>$error</p>"; ?>
-    <form method="POST">
-        <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required><br>
-        <label for="description">Description:</label>
-        <textarea id="description" name="description" required></textarea><br>
-        <button type="submit">Create</button>
-    </form>
-</body>
-</html>
+<?php include '/var/www/includes/header.php'; ?>
+
+<h2>Create New Ticket</h2>
+
+<?php if (isset($error)): ?>
+    <p class="error"><?php echo $error; ?></p>
+<?php endif; ?>
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required>
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="5" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="attachment">Attachment</label>
+        <input type="file" id="attachment" name="attachment">
+    </div>
+    <button type="submit">Create Ticket</button>
+</form>
+
+<?php include '/var/www/includes/footer.php'; ?>
