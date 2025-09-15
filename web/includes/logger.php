@@ -28,8 +28,8 @@ function hp_enhanced_threat_analysis($query, $body, $headers, $ip, $path, $user_
     // MITRE ATT&CK TTP Analysis
     $detected_ttps = MitreTTPMapper::analyzeTTP($request_data);
     
-    // Legacy simple tags for backward compatibility  
-    $simple_tags = hp_simple_tag($query, $body, $headers);
+    // Extract basic attack indicators from request  
+    $simple_tags = '';
     
     // Threat severity calculation
     $severity = hp_calculate_severity($detected_ttps, $request_data);
@@ -46,25 +46,7 @@ function hp_enhanced_threat_analysis($query, $body, $headers, $ip, $path, $user_
     ];
 }
 
-// Legacy function for backward compatibility
-function hp_simple_tag($query, $body, $headers) {
-    $tags = [];
-    $patterns = [
-        'SQLI' => '/\bunion\s+select\b|\bor\s+1=1\b|\bsleep\s*\(|\bload_file\s*\(/i',
-        'XSS' => '/<script\b|onerror\s*=|onload\s*=/i', 
-        'TRAVERSAL' => '/\.\.\/|\.\.\\|\/etc\/passwd/i',
-        'LFI' => '/php:\/\/|\/proc\/self\/environ/i',
-        'CMD' => '/;id\b|;cat\b|;bash\b|;nc\b/i'
-    ];
-
-    foreach ($patterns as $tag => $regex) {
-        if (preg_match($regex, $query) || preg_match($regex, $body) || preg_match($regex, json_encode($headers))) {
-            $tags[] = $tag;
-        }
-    }
-
-    return implode(',', $tags);
-}
+// Removed legacy hp_simple_tag function - using MITRE ATT&CK analysis instead
 
 function hp_calculate_severity($ttps, $request_data) {
     if (empty($ttps)) return 'Low';

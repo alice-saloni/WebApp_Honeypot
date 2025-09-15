@@ -61,7 +61,7 @@ setInterval(() => {
 }, 5000);
 
 const chartData = <?php echo json_encode($chartData); ?>;
-console.log(chartData); // Placeholder for rendering charts
+// Chart data processed
 
 // Render charts using vanilla JavaScript
 function renderCharts(data) {

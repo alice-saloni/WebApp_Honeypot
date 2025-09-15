@@ -133,9 +133,6 @@ arsort($attribution_stats);
         .widget h3 {
             color: #00ff88;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         
         .severity-critical { color: #ff4757; font-weight: bold; }
@@ -271,13 +268,13 @@ arsort($attribution_stats);
 </head>
 <body>
     <div class="header">
-        <h1>🕵️ Threat Intelligence Dashboard</h1>
+        <h1>Threat Intelligence Dashboard</h1>
         <p>Real-time MITRE ATT&CK mapping and attack attribution</p>
     </div>
 
     <div class="container">
         <div class="filters">
-            <label>📅 Time Range:</label>
+            <label>Time Range:</label>
             <select onchange="updateFilter('hours', this.value)">
                 <option value="1" <?= $hours == 1 ? 'selected' : '' ?>>Last Hour</option>
                 <option value="6" <?= $hours == 6 ? 'selected' : '' ?>>Last 6 Hours</option>
@@ -285,7 +282,7 @@ arsort($attribution_stats);
                 <option value="168" <?= $hours == 168 ? 'selected' : '' ?>>Last Week</option>
             </select>
 
-            <label>🚨 Severity Filter:</label>
+            <label>Severity Filter:</label>
             <select onchange="updateFilter('severity', this.value)">
                 <option value="" <?= !$severity_filter ? 'selected' : '' ?>>All Severities</option>
                 <option value="Critical" <?= $severity_filter == 'Critical' ? 'selected' : '' ?>>Critical</option>
@@ -294,13 +291,13 @@ arsort($attribution_stats);
                 <option value="Low" <?= $severity_filter == 'Low' ? 'selected' : '' ?>>Low</option>
             </select>
 
-            <button onclick="window.location.reload()">🔄 Refresh</button>
+            <button onclick="window.location.reload()">Refresh</button>
         </div>
 
         <div class="dashboard-grid">
             <!-- Attack Summary -->
             <div class="widget">
-                <h3>📊 Attack Summary</h3>
+                <h3>Attack Summary</h3>
                 <div class="metric-large"><?= count($attacks) ?></div>
                 <p style="text-align: center;">Total Attacks Detected</p>
                 
@@ -316,7 +313,7 @@ arsort($attribution_stats);
 
             <!-- MITRE ATT&CK Tactics Heatmap -->
             <div class="widget" style="grid-column: span 2;">
-                <h3>🎯 MITRE ATT&CK Tactics Heatmap</h3>
+                <h3>MITRE ATT&CK Tactics Heatmap</h3>
                 <div class="mitre-heatmap">
                     <?php 
                     $tactic_colors = [
@@ -345,7 +342,7 @@ arsort($attribution_stats);
 
             <!-- Top TTPs -->
             <div class="widget">
-                <h3>🔥 Top MITRE TTPs</h3>
+                <h3>Top MITRE TTPs</h3>
                 <?php $i = 0; foreach (array_slice($ttp_count, 0, 10, true) as $ttp_id => $data): ?>
                     <div class="ttp-item">
                         <div>
@@ -362,7 +359,7 @@ arsort($attribution_stats);
 
             <!-- Threat Actors / Attribution -->
             <div class="widget">
-                <h3>🎭 Attack Attribution</h3>
+                <h3>Attack Attribution</h3>
                 <?php foreach (array_slice($attribution_stats, 0, 10, true) as $tool => $count): ?>
                     <div class="tool-item">
                         <span><?= htmlspecialchars($tool) ?></span>
@@ -373,7 +370,7 @@ arsort($attribution_stats);
 
             <!-- Top Attacking IPs -->
             <div class="widget">
-                <h3>🌐 Top Attacking IPs</h3>
+                <h3>Top Attacking IPs</h3>
                 <?php foreach (array_slice($ip_stats, 0, 10, true) as $ip => $stats): ?>
                     <div class="ip-item">
                         <div>
@@ -389,7 +386,7 @@ arsort($attribution_stats);
 
             <!-- Recent Attacks Timeline -->
             <div class="widget" style="grid-column: span 2;">
-                <h3>⏰ Recent Attacks Timeline</h3>
+                <h3>Recent Attacks Timeline</h3>
                 <div class="attacks-timeline">
                     <?php foreach (array_slice($attacks, 0, 50) as $attack): 
                         $severity_class = 'severity-' . strtolower($attack['severity']);
@@ -457,7 +454,7 @@ arsort($attribution_stats);
                 
                 // Flash notification for new attacks
                 if (data.new_attacks > 0) {
-                    showNotification(`🚨 ${data.new_attacks} new attacks detected!`);
+                    showNotification(`${data.new_attacks} new attacks detected!`);
                 }
                 
             } catch (error) {
