@@ -3,19 +3,43 @@ require_once '/var/www/includes/init.php';
 require_once '/var/www/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
 
-    // VULN: SQL Injection
+    // VULN: Simple and effective SQL Injection vulnerability
     $query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
-    $result = $db->query($query);
+    
+    // Suppress errors for injection attempts and try to execute
+    $result = @$db->query($query);
 
     if ($result && $result->num_rows > 0) {
-        $_SESSION['user'] = $result->fetch_assoc();
+        $user = $result->fetch_assoc();
+        $_SESSION['user'] = $user;
+        
+        // VULN: Show successful login details (information disclosure)
+        if (isset($_GET['debug'])) {
+            echo "<pre>Successful login:\n";
+            echo "Query: " . htmlspecialchars($query) . "\n";
+            echo "User data: " . print_r($user, true) . "</pre>";
+            exit;
+        }
+        
         header('Location: dashboard.php');
         exit;
     } else {
-        $error = 'Invalid username or password';
+        // VULN: Show helpful error information for attackers
+        if ($db->error) {
+            // SQL injection succeeded but didn't return results
+            $error = 'Login failed - but query executed successfully!';
+            $error .= '<br><strong>SQL Query:</strong> ' . htmlspecialchars($query);
+            $error .= '<br><strong>DB Response:</strong> ' . htmlspecialchars($db->error);
+        } else {
+            $error = 'Invalid username or password';
+            // Show query for debugging injection attempts
+            if (strpos($username, "'") !== false || strpos($username, "--") !== false) {
+                $error .= '<br><small>🔍 Query Debug: ' . htmlspecialchars($query) . '</small>';
+            }
+        }
     }
 }
 ?>
@@ -155,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                <input type="password" id="password" name="password" placeholder="Enter your password">
             </div>
             <button type="submit">Login</button>
         </form>

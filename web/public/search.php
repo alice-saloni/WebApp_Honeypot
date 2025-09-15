@@ -9,14 +9,23 @@ if (!isset($_SESSION['user'])) {
 require_once '/var/www/includes/db.php';
 
 $searchResults = [];
+$executed_query = '';
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['q'])) {
     $query = $_GET['q'];
 
-    // VULN: SQL Injection - User input is directly concatenated into the SQL query without sanitization.
+    // VULN: MAXIMUM SQL Injection - accepts ANY SQL query!
     $sql = "SELECT * FROM tickets WHERE title LIKE '%$query%'";
+    $executed_query = $sql;
+    
+    // If query looks like a direct SQL statement, just execute it
+    if (preg_match('/^\s*(select|show|describe|explain)/i', trim($query))) {
+        $sql = trim($query);
+        $executed_query = $sql;
+    }
+    
     $result = $db->query($sql);
 
-    if ($result) {
+    if ($result && is_object($result)) {
         while ($row = $result->fetch_assoc()) {
             $searchResults[] = $row;
         }

@@ -50,7 +50,7 @@ CREATE TABLE uploads (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create requests table
+-- Create enhanced requests table with threat intelligence
 CREATE TABLE IF NOT EXISTS requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -66,7 +66,11 @@ CREATE TABLE IF NOT EXISTS requests (
     session_id VARCHAR(128),
     response_status INT DEFAULT 200,
     tags VARCHAR(255),
-    notes VARCHAR(255)
+    notes VARCHAR(255),
+    ttps JSON,
+    severity ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Low',
+    attribution JSON,
+    tactics JSON
 );
 
 -- Insert synthetic attack rows
