@@ -10,6 +10,9 @@ services:
       - ./web/includes:/var/www/includes
     environment:
       - MONITOR_PASSWORD=monitor123
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
@@ -23,6 +26,11 @@ services:
       MYSQL_PASSWORD: bugtracker_password
     volumes:
       - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin

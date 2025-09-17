@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "<div class='error-message'>$error</div>";
         }
         if (isset($success)) {
-            echo "<div style='color: #27ae60; background: rgba(39, 174, 96, 0.2); padding: 10px; border-radius: 5px; margin-bottom: 20px;'>$success</div>";
+            echo "<div style='color: #ffffff; background: #2196F3; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-weight: bold; text-shadow: 1px 1px 1px rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>$success</div>";
         }
         ?>
         <form method="POST">

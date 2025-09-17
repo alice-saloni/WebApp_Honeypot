@@ -1,11 +1,20 @@
 <?php
 require_once '/var/www/includes/init.php';
+require_once '/var/www/includes/db.php';
+
+// Start the session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Buffer the output to prevent headers already sent error
+ob_start();
+
+// Check session before any output
 if (!isset($_SESSION['user'])) {
     header('Location: login.php');
     exit;
 }
-
-require_once '/var/www/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = $_POST['title'];

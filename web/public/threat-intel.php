@@ -3,6 +3,13 @@ require_once '/var/www/includes/init.php';
 require_once '/var/www/includes/db.php';
 require_once '/var/www/includes/mitre_mapper.php';
 
+// Set title for header
+$page_title = "Threat Intelligence Dashboard";
+require_once '/var/www/includes/header.php';
+
+echo '<h1 class="dashboard-title">Threat Intelligence Dashboard</h1>';
+echo '<h2 class="dashboard-subtitle">Real-time Attack Monitoring & Analysis</h2>';
+
 // Authentication for threat intelligence dashboard
 if (!isset($_SERVER['PHP_AUTH_USER']) || 
     $_SERVER['PHP_AUTH_USER'] !== 'threat' || 
@@ -24,6 +31,8 @@ if ($severity_filter) {
 }
 $query .= " ORDER BY ts DESC";
 $result = $db->query($query);
+
+echo '<h3 class="section-heading">Attack Statistics Overview</h3>';
 
 // Collect threat intelligence data
 $attacks = [];
@@ -51,30 +60,48 @@ while ($row = $result->fetch_assoc()) {
         $ip_stats[$ip]['severity'] = $row['severity'];
     }
     
+    // Track attack types
+    if (!empty($row['attack_type'])) {
+        if (!isset($ttp_count[$row['attack_type']])) {
+            $ttp_count[$row['attack_type']] = 0;
+        }
+        $ttp_count[$row['attack_type']]++;
+    }
+    
+    // Track tools/attribution
+    if (!empty($row['tool'])) {
+        if (!isset($attribution_stats[$row['tool']])) {
+            $attribution_stats[$row['tool']] = 0;
+        }
+        $attribution_stats[$row['tool']]++;
+    }
+    
     // Parse TTPs and tactics
-    if ($row['ttps']) {
+    if (!empty($row['ttps'])) {
         $ttps = json_decode($row['ttps'], true);
-        foreach ($ttps as $ttp) {
-            $ttp_id = $ttp['ttp_id'];
-            $tactic = $ttp['tactic'];
-            
-            if (!isset($ttp_count[$ttp_id])) {
-                $ttp_count[$ttp_id] = ['count' => 0, 'name' => $ttp['name'], 'tactic' => $tactic];
+        if ($ttps) {
+            foreach ($ttps as $ttp) {
+                $ttp_id = $ttp['ttp_id'];
+                $tactic = $ttp['tactic'];
+                
+                if (!isset($ttp_count[$ttp_id])) {
+                    $ttp_count[$ttp_id] = ['count' => 0, 'name' => $ttp['name'], 'tactic' => $tactic];
+                }
+                $ttp_count[$ttp_id]['count']++;
+                
+                if (!isset($tactics_count[$tactic])) {
+                    $tactics_count[$tactic] = 0;
+                }
+                $tactics_count[$tactic]++;
             }
-            $ttp_count[$ttp_id]['count']++;
-            
-            if (!isset($tactics_count[$tactic])) {
-                $tactics_count[$tactic] = 0;
-            }
-            $tactics_count[$tactic]++;
         }
     }
     
-    // Parse attribution
-    if ($row['attribution']) {
-        $attribution = json_decode($row['attribution'], true);
-        if (isset($attribution['tools'])) {
-            foreach ($attribution['tools'] as $tool) {
+    // Parse attribution details
+    if (!empty($row['attribution'])) {
+        $attr = json_decode($row['attribution'], true);
+        if ($attr && isset($attr['tools'])) {
+            foreach ($attr['tools'] as $tool) {
                 if (!isset($attribution_stats[$tool])) {
                     $attribution_stats[$tool] = 0;
                 }
@@ -84,407 +111,191 @@ while ($row = $result->fetch_assoc()) {
     }
 }
 
-// Sort data for display
+// Sort stats for display
 arsort($ttp_count);
 arsort($tactics_count);
 arsort($ip_stats);
 arsort($attribution_stats);
-?>
 
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🕵️ Threat Intelligence Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
-            color: #fff; 
-            min-height: 100vh;
-        }
-        
-        .header {
-            background: rgba(0,0,0,0.3);
-            padding: 20px 0;
-            text-align: center;
-            border-bottom: 3px solid #00ff88;
-        }
-        
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .widget {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .widget h3 {
-            color: #00ff88;
-            margin-bottom: 15px;
-        }
-        
-        .severity-critical { color: #ff4757; font-weight: bold; }
-        .severity-high { color: #ff6b35; font-weight: bold; }
-        .severity-medium { color: #ffa726; }
-        .severity-low { color: #66bb6a; }
-        
-        .metric-large {
-            font-size: 2.5em;
-            font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .ttp-item, .ip-item, .tool-item {
-            background: rgba(0,0,0,0.2);
-            margin: 8px 0;
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 4px solid #00ff88;
-        }
-        
-        .ttp-id { 
-            color: #00ff88; 
-            font-family: monospace; 
-            font-weight: bold;
-        }
-        
-        .tactic-badge {
-            background: #2196f3;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            margin-left: 5px;
-        }
-        
-        .filters {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .filters select, .filters button {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-        }
-        
-        .attacks-timeline {
-            max-height: 400px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-            padding: 15px;
-        }
-        
-        .attack-entry {
-            background: rgba(255,255,255,0.05);
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 5px;
-            border-left: 3px solid;
-        }
-        
-        .mitre-heatmap {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .tactic-cell {
-            background: rgba(0,0,0,0.3);
-            padding: 15px 10px;
-            text-align: center;
-            border-radius: 8px;
-            border: 2px solid transparent;
-            transition: all 0.3s;
-        }
-        
-        .tactic-cell:hover { transform: scale(1.05); }
-        .tactic-count { font-size: 1.2em; font-weight: bold; margin-top: 5px; }
-        
-        .stat-bar {
-            background: rgba(0,0,0,0.2);
-            height: 25px;
-            border-radius: 12px;
-            margin: 5px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-fill {
-            background: linear-gradient(90deg, #00ff88, #0099cc);
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.3s;
-        }
-        
-        .stat-label {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-        
-        .pulse-red { animation: pulseRed 0.5s ease; }
-        @keyframes pulseRed {
-            from { background-color: rgba(255,75,87,0.2); }
-            to { background-color: transparent; }
-        }
-    </style>
+    <title>Threat Intelligence Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="threat-intel.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="header">
-        <h1>Threat Intelligence Dashboard</h1>
-        <p>Real-time MITRE ATT&CK mapping and attack attribution</p>
-    </div>
-
     <div class="container">
         <div class="filters">
-            <label>Time Range:</label>
-            <select onchange="updateFilter('hours', this.value)">
-                <option value="1" <?= $hours == 1 ? 'selected' : '' ?>>Last Hour</option>
-                <option value="6" <?= $hours == 6 ? 'selected' : '' ?>>Last 6 Hours</option>
-                <option value="24" <?= $hours == 24 ? 'selected' : '' ?>>Last 24 Hours</option>
-                <option value="168" <?= $hours == 168 ? 'selected' : '' ?>>Last Week</option>
-            </select>
-
-            <label>Severity Filter:</label>
-            <select onchange="updateFilter('severity', this.value)">
-                <option value="" <?= !$severity_filter ? 'selected' : '' ?>>All Severities</option>
-                <option value="Critical" <?= $severity_filter == 'Critical' ? 'selected' : '' ?>>Critical</option>
-                <option value="High" <?= $severity_filter == 'High' ? 'selected' : '' ?>>High</option>
-                <option value="Medium" <?= $severity_filter == 'Medium' ? 'selected' : '' ?>>Medium</option>
-                <option value="Low" <?= $severity_filter == 'Low' ? 'selected' : '' ?>>Low</option>
-            </select>
-
-            <button onclick="window.location.reload()">Refresh</button>
+            <form method="get" action="">
+                <select name="hours">
+                    <option value="1" <?php echo $hours == 1 ? 'selected' : ''; ?>>Last Hour</option>
+                    <option value="24" <?php echo $hours == 24 ? 'selected' : ''; ?>>Last 24 Hours</option>
+                    <option value="168" <?php echo $hours == 168 ? 'selected' : ''; ?>>Last Week</option>
+                </select>
+                <select name="severity">
+                    <option value="">All Severities</option>
+                    <?php foreach (['Low', 'Medium', 'High', 'Critical'] as $sev): ?>
+                        <option value="<?php echo $sev; ?>" <?php echo $severity_filter === $sev ? 'selected' : ''; ?>>
+                            <?php echo $sev; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="refresh-button">Refresh</button>
+            </form>
         </div>
 
-        <div class="dashboard-grid">
-            <!-- Attack Summary -->
-            <div class="widget">
-                <h3>Attack Summary</h3>
-                <div class="metric-large"><?= count($attacks) ?></div>
-                <p style="text-align: center;">Total Attacks Detected</p>
-                
-                <div style="margin: 20px 0;">
-                    <?php foreach ($severity_count as $sev => $count): ?>
-                        <div class="stat-bar" data-severity="<?= $sev ?>">
-                            <div class="stat-fill" style="width: <?= $count > 0 ? ($count / count($attacks) * 100) : 0 ?>%"></div>
-                            <div class="stat-label severity-<?= strtolower($sev) ?>"><?= $sev ?>: <?= $count ?></div>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Total Attacks</div>
+                <div class="stat-value"><?php echo count($attacks); ?></div>
+            </div>
+            <?php foreach ($severity_count as $severity => $count): ?>
+                <div class="stat-card">
+                    <div class="stat-title"><?php echo $severity; ?> Severity</div>
+                    <div class="stat-value severity-<?php echo strtolower($severity); ?>"><?php echo $count; ?></div>
                 </div>
-            </div>
-
-            <!-- MITRE ATT&CK Tactics Heatmap -->
-            <div class="widget" style="grid-column: span 2;">
-                <h3>MITRE ATT&CK Tactics Heatmap</h3>
-                <div class="mitre-heatmap">
-                    <?php 
-                    $tactic_colors = [
-                        'Initial Access' => '#ff4757',
-                        'Execution' => '#ff6b35', 
-                        'Persistence' => '#ffa726',
-                        'Privilege Escalation' => '#ff7043',
-                        'Defense Evasion' => '#ab47bc',
-                        'Credential Access' => '#5c6bc0',
-                        'Discovery' => '#42a5f5',
-                        'Collection' => '#26c6da',
-                        'Exfiltration' => '#66bb6a',
-                        'Command and Control' => '#9ccc65'
-                    ];
-                    
-                    foreach ($tactic_colors as $tactic => $color): 
-                        $count = $tactics_count[$tactic] ?? 0;
-                    ?>
-                        <div class="tactic-cell" style="border-color: <?= $color ?>;">
-                            <div style="color: <?= $color ?>; font-weight: bold; font-size: 0.9em;"><?= $tactic ?></div>
-                            <div class="tactic-count" style="color: <?= $color ?>;"><?= $count ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- Top TTPs -->
-            <div class="widget">
-                <h3>Top MITRE TTPs</h3>
-                <?php $i = 0; foreach (array_slice($ttp_count, 0, 10, true) as $ttp_id => $data): ?>
-                    <div class="ttp-item">
-                        <div>
-                            <span class="ttp-id"><?= $ttp_id ?></span>
-                            <span class="tactic-badge"><?= $data['tactic'] ?></span>
-                            <span style="float: right; font-weight: bold;"><?= $data['count'] ?></span>
-                        </div>
-                        <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.9;">
-                            <?= $data['name'] ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Threat Actors / Attribution -->
-            <div class="widget">
-                <h3>Attack Attribution</h3>
-                <?php foreach (array_slice($attribution_stats, 0, 10, true) as $tool => $count): ?>
-                    <div class="tool-item">
-                        <span><?= htmlspecialchars($tool) ?></span>
-                        <span style="float: right; font-weight: bold;"><?= $count ?></span>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Top Attacking IPs -->
-            <div class="widget">
-                <h3>Top Attacking IPs</h3>
-                <?php foreach (array_slice($ip_stats, 0, 10, true) as $ip => $stats): ?>
-                    <div class="ip-item">
-                        <div>
-                            <span style="font-family: monospace; font-weight: bold;"><?= $ip ?></span>
-                            <span class="severity-<?= strtolower($stats['severity']) ?>" style="float: right;"><?= $stats['severity'] ?></span>
-                        </div>
-                        <div style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">
-                            <?= $stats['count'] ?> attacks | First: <?= $stats['first_seen'] ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- Recent Attacks Timeline -->
-            <div class="widget" style="grid-column: span 2;">
-                <h3>Recent Attacks Timeline</h3>
-                <div class="attacks-timeline">
-                    <?php foreach (array_slice($attacks, 0, 50) as $attack): 
-                        $severity_class = 'severity-' . strtolower($attack['severity']);
-                        $border_color = ['Low' => '#66bb6a', 'Medium' => '#ffa726', 'High' => '#ff6b35', 'Critical' => '#ff4757'][$attack['severity']];
-                    ?>
-                        <div class="attack-entry" style="border-left-color: <?= $border_color ?>;">
-                            <div>
-                                <span class="<?= $severity_class ?>"><?= $attack['severity'] ?></span>
-                                <span style="font-family: monospace;"><?= $attack['ip'] ?></span>
-                                <span style="float: right; font-size: 0.9em;"><?= $attack['ts'] ?></span>
-                            </div>
-                            <div style="margin: 5px 0; font-size: 0.9em;">
-                                <strong><?= $attack['method'] ?></strong> <?= htmlspecialchars(substr($attack['path'], 0, 50)) ?>
-                            </div>
-                            <div style="font-size: 0.8em; opacity: 0.8;">
-                                Tags: <?= $attack['tags'] ?: 'None' ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
+            <?php endforeach; ?>
         </div>
+
+        <div class="chart-container">
+            <canvas id="attacksChart"></canvas>
+        </div>
+
+        <h2>Recent Attacks</h2>
+        <table class="attacks-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>IP Address</th>
+                    <th>Attack Type</th>
+                    <th>Severity</th>
+                    <th>Tool</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($attacks as $attack): ?>
+                <tr class="attack-row">
+                    <td><?php echo date('Y-m-d H:i:s', strtotime($attack['ts'])); ?></td>
+                    <td><?php echo htmlspecialchars($attack['ip']); ?></td>
+                    <td><?php echo htmlspecialchars($attack['attack_type']); ?></td>
+                    <td class="severity-<?php echo strtolower($attack['severity']); ?>">
+                        <?php echo htmlspecialchars($attack['severity']); ?>
+                    </td>
+                    <td><?php echo htmlspecialchars($attack['tool'] ?? 'Unknown'); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 
     <script>
-        function updateFilter(param, value) {
-            const url = new URL(window.location);
-            url.searchParams.set(param, value);
-            window.location = url;
-        }
+        const ctx = document.getElementById('attacksChart').getContext('2d');
         
-        // Real-time updates every 5 seconds
-        async function realtimeUpdate() {
-            try {
-                const response = await fetch(window.location.href);
-                if (response.ok) {
-                    // Only update dynamic content sections
-                    updateDashboardStats();
-                }
-            } catch (error) {
-                console.log('Update check failed, will retry...');
+        // Prepare the data for the chart
+        const labels = [];
+        const data = [];
+        
+        <?php
+        foreach ($ttp_count as $ttp_id => $info) {
+            if (is_array($info)) {
+                echo "labels.push(" . json_encode($ttp_id) . ");\n";
+                echo "data.push(" . json_encode($info['count']) . ");\n";
+            } else {
+                echo "labels.push(" . json_encode($ttp_id) . ");\n";
+                echo "data.push(" . json_encode($info) . ");\n";
             }
-            setTimeout(realtimeUpdate, 5000);
         }
+        ?>
         
-        async function updateDashboardStats() {
-            try {
-                const response = await fetch('threat-api.php?action=live_stats&hours=' + getTimeRange());
-                const data = await response.json();
-                
-                // Update counters
-                document.querySelector('.metric-large').textContent = data.total_attacks || 0;
-                
-                // Update severity bars
-                const severities = ['Critical', 'High', 'Medium', 'Low'];
-                severities.forEach(sev => {
-                    const count = data.severity_count[sev] || 0;
-                    const percentage = data.total_attacks > 0 ? (count / data.total_attacks * 100) : 0;
-                    const bar = document.querySelector(`[data-severity="${sev}"]`);
-                    if (bar) {
-                        bar.querySelector('.stat-fill').style.width = percentage + '%';
-                        bar.querySelector('.stat-label').textContent = `${sev}: ${count}`;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Attack Types',
+                    data: data,
+                    backgroundColor: '#61dafb',
+                    borderColor: '#2c5364',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0',
+                            font: {
+                                size: 12
+                            }
+                        }
                     }
-                });
-                
-                // Flash notification for new attacks
-                if (data.new_attacks > 0) {
-                    showNotification(`${data.new_attacks} new attacks detected!`);
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e0e0e0',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
                 }
-                
-            } catch (error) {
-                console.error('Failed to update stats:', error);
             }
-        }
-        
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            notification.style.cssText = `
-                position: fixed; top: 20px; right: 20px; z-index: 9999;
-                background: rgba(255,75,87,0.9); color: white; padding: 15px 20px;
-                border-radius: 8px; font-weight: bold; animation: slideIn 0.5s ease;
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.5s ease';
-                setTimeout(() => notification.remove(), 500);
-            }, 3000);
-        }
-        
-        function getTimeRange() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('hours') || '24';
-        }
-        
-        // Start real-time updates
-        setTimeout(realtimeUpdate, 5000);
+        });
+    </script>
+</body>
+</html>
+                    backgroundColor: '#61dafb',
+                    borderColor: '#2c5364',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e0e0e0'
+                        }
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>
