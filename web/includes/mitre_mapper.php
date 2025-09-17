@@ -244,5 +244,36 @@ class MitreTTPMapper {
         }
         return $tactics;
     }
+    
+    public static function classifyAttack($request_data) {
+        $attack_type = 'Unknown';
+        $severity = 'Low';
+
+        // Check for SQL Injection patterns
+        if (preg_match('/union\s+select|\'.*?(?:--|#|;)|(?:sleep|benchmark)\s*\(|load_file\s*\(|information_schema/i', $request_data)) {
+            $attack_type = 'T1190';  // SQL Injection
+            $severity = 'High';
+        }
+        // Check for Command Injection
+        elseif (preg_match('/(?:;|\||\|\||&&|\n|\r).*?(?:wget|curl|bash|sh|nc|python|perl|ruby)/i', $request_data)) {
+            $attack_type = 'T1059';  // Command Injection
+            $severity = 'Critical';
+        }
+        // Check for File Upload Attacks
+        elseif (preg_match('/\.(?:php|jsp|asp|aspx|exe|sh|pl|py|rb)$/i', $request_data)) {
+            $attack_type = 'T1505.003';  // File Upload
+            $severity = 'High';
+        }
+        // Check for Authentication Bypass
+        elseif (preg_match('/\'.*?(?:or|and).*?(?:true|1|\'1\')/i', $request_data)) {
+            $attack_type = 'T1110';  // Authentication Bypass
+            $severity = 'High';
+        }
+
+        return [
+            'type' => $attack_type,
+            'severity' => $severity
+        ];
+    }
 }
 ?>

@@ -24,6 +24,40 @@ if (!isset($_SERVER['PHP_AUTH_USER']) ||
 $hours = isset($_GET['hours']) ? (int)$_GET['hours'] : 24;
 $severity_filter = $_GET['severity'] ?? '';
 
+// Filter function to clean request data
+function filterRequestData($data) {
+    if (!is_string($data)) {
+        return $data;
+    }
+    
+    // First pass: Remove any JSON-like structures that might contain CSS
+    $data = preg_replace('/\{(?:[^{}]|(?R))*\}/', '[JSON_CONTENT]', $data);
+    
+    // Second pass: Remove CSS-specific patterns
+    $patterns = [
+        // Remove complete CSS rules
+        '/[^{]*\{[^}]*\}/' => '[CSS_BLOCK]',
+        // Remove @-rules
+        '/@[^{;]+[{;]/' => '[CSS_RULE]',
+        // Remove style attributes
+        '/style\s*=\s*(["\'])[^"\']*\1/' => 'style="[REMOVED]"',
+        // Remove style tags
+        '/<style[^>]*>.*?<\/style>/si' => '[STYLE_BLOCK]',
+        // Remove CSS properties
+        '/([a-zA-Z-]+\s*:(?:[^;}]|&quot;[^&]*&quot;)*[;}])/' => '[CSS_PROPERTY]',
+        // Remove background/color properties
+        '/(background|color)\s*:[^;}]+[;}]/' => '[COLOR_PROPERTY]',
+        // Remove any remaining CSS-like patterns
+        '/([a-zA-Z-]+\s*:[^;}]*)/' => '[PROPERTY]'
+    ];
+    
+    foreach ($patterns as $pattern => $replacement) {
+        $data = preg_replace($pattern, $replacement, $data);
+    }
+    
+    return $data;
+}
+
 // Main dashboard query with threat intelligence
 $query = "SELECT * FROM requests WHERE ts >= NOW() - INTERVAL $hours HOUR";
 if ($severity_filter) {
@@ -43,6 +77,36 @@ $ip_stats = [];
 $attribution_stats = [];
 
 while ($row = $result->fetch_assoc()) {
+    // Clean and sanitize the data
+    foreach ($row as $key => $value) {
+        $row[$key] = filterRequestData($value);
+    }
+    
+    // Process attack type
+    if (empty($row['attack_type']) || $row['attack_type'] === 'Unknown') {
+        // Try to determine attack type from request data
+        if (!empty($row['request'])) {
+            $request = strtolower($row['request']);
+            if (strpos($request, 'union select') !== false || strpos($request, '1=1') !== false) {
+                $row['attack_type'] = 'SQL Injection';
+            } elseif (strpos($request, '<script') !== false || strpos($request, 'javascript:') !== false) {
+                $row['attack_type'] = 'XSS';
+            } elseif (strpos($request, '../') !== false || strpos($request, 'etc/passwd') !== false) {
+                $row['attack_type'] = 'Path Traversal';
+            } elseif (strpos($request, 'eval(') !== false || strpos($request, 'system(') !== false) {
+                $row['attack_type'] = 'Command Injection';
+            }
+        }
+        // If still unknown, set default
+        $row['attack_type'] = $row['attack_type'] ?? 'Reconnaissance';
+    }
+    
+    $row['severity'] = $row['severity'] ?? 'Low';
+    
+    // Clean any potential CSS/script content from attack data
+    $row['attack_type'] = filterRequestData($row['attack_type']);
+    $row['severity'] = filterRequestData($row['severity']);
+    
     $attacks[] = $row;
     
     // Count by severity
@@ -182,11 +246,17 @@ arsort($attribution_stats);
                 <tr class="attack-row">
                     <td><?php echo date('Y-m-d H:i:s', strtotime($attack['ts'])); ?></td>
                     <td><?php echo htmlspecialchars($attack['ip']); ?></td>
-                    <td><?php echo htmlspecialchars($attack['attack_type']); ?></td>
-                    <td class="severity-<?php echo strtolower($attack['severity']); ?>">
-                        <?php echo htmlspecialchars($attack['severity']); ?>
+                    <td><?php 
+                        $attack_type = $attack['attack_type'] ?? 'Unknown';
+                        echo htmlspecialchars(filterRequestData($attack_type)); 
+                    ?></td>
+                    <td class="severity-<?php echo strtolower($attack['severity'] ?? 'low'); ?>">
+                        <?php echo htmlspecialchars($attack['severity'] ?? 'Low'); ?>
                     </td>
-                    <td><?php echo htmlspecialchars($attack['tool'] ?? 'Unknown'); ?></td>
+                    <td><?php 
+                        $tool = $attack['tool'] ?? 'Unknown';
+                        echo htmlspecialchars(filterRequestData($tool)); 
+                    ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -201,14 +271,23 @@ arsort($attribution_stats);
         const data = [];
         
         <?php
-        foreach ($ttp_count as $ttp_id => $info) {
-            if (is_array($info)) {
-                echo "labels.push(" . json_encode($ttp_id) . ");\n";
-                echo "data.push(" . json_encode($info['count']) . ");\n";
-            } else {
-                echo "labels.push(" . json_encode($ttp_id) . ");\n";
-                echo "data.push(" . json_encode($info) . ");\n";
+        // Aggregate attack types for the chart
+        $attack_stats = [];
+        foreach ($attacks as $attack) {
+            $type = $attack['attack_type'];
+            if (!isset($attack_stats[$type])) {
+                $attack_stats[$type] = 0;
             }
+            $attack_stats[$type]++;
+        }
+        
+        // Sort by frequency
+        arsort($attack_stats);
+        
+        // Output the data
+        foreach ($attack_stats as $type => $count) {
+            echo "labels.push(" . json_encode($type) . ");\n";
+            echo "data.push(" . json_encode($count) . ");\n";
         }
         ?>
         
